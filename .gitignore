@@ -13,6 +13,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+logs/
 
 # Visual Studio cache/options
 .vs/
@@ -64,18 +65,13 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
-# Logs
-logs/
-*.log
-
-# npm
-node_modules/
-dist/
-build/
-
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# Testing
+.coverage
+*.trx
