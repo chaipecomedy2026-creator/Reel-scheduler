@@ -4,7 +4,7 @@ namespace ReelSchedulerPro.Application.Services;
 
 public interface IAuthenticationService
 {
-    Task<AuthTokenDTO> AuthenticateAsync(string email, string password, CancellationToken cancellationToken);
+    Task<AuthTokenDTO> LoginAsync(string email, string password, CancellationToken cancellationToken);
     Task<AuthTokenDTO> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken);
-    Task<bool> ValidateTokenAsync(string token, CancellationToken cancellationToken);
+    Task<RegisterResponse> RegisterAsync(string email, string password, string firstName, string lastName, string organizationName, CancellationToken cancellationToken);
 }

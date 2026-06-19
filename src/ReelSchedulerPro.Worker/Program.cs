@@ -3,6 +3,8 @@ using ReelSchedulerPro.Application.Services;
 using ReelSchedulerPro.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 Host.CreateDefaultBuilder(args)
     .UseSerilog((context, configuration) =>
@@ -13,16 +15,20 @@ Host.CreateDefaultBuilder(args)
             .Enrich.FromLogContext())
     .ConfigureServices((context, services) =>
     {
-        // Add DbContext
         var connectionString = context.Configuration.GetConnectionString("DefaultConnection") 
             ?? "Host=localhost;Database=ReelSchedulerPro;Username=postgres;Password=postgres";
+        
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        // Add Services
         services.AddScoped<IEncryptionService, EncryptionService>();
         services.AddScoped<IInstagramService, InstagramService>();
         services.AddHttpClient<IInstagramService, InstagramService>();
+        services.AddScoped<IAiCaptionService, AiCaptionService>();
+
+        services.AddHangfire(config =>
+            config.UsePostgres(connectionString, new PostgreSqlStorageOptions { }));
+        services.AddHangfireServer();
 
         services.AddHostedService<ReelSchedulerPro.Worker.Worker>();
     })

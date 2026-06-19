@@ -2,6 +2,7 @@ using ReelSchedulerPro.Infrastructure.Data;
 using ReelSchedulerPro.Application.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Hangfire;
 
 namespace ReelSchedulerPro.Worker;
 
@@ -19,6 +20,21 @@ public class Worker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.Information("Reel Scheduler Worker started");
+        
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+            
+            recurringJobManager.AddOrUpdate(
+                "process-scheduled-reels",
+                () => ProcessScheduledReels(CancellationToken.None),
+                "*/30 * * * * *"); // Every 30 seconds
+
+            recurringJobManager.AddOrUpdate(
+                "check-account-health",
+                () => CheckAccountHealth(CancellationToken.None),
+                "0 */1 * * * *"); // Every hour
+        }
         
         _timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
 
@@ -76,7 +92,6 @@ public class Worker : BackgroundService
                             continue;
                         }
 
-                        // Decrypt the access token
                         var decryptedToken = encryptionService.Decrypt(account.AccessToken);
                         account.AccessToken = decryptedToken;
 
@@ -84,7 +99,7 @@ public class Worker : BackgroundService
 
                         if (success)
                         {
-                            reel.Status = "Posted";
+                            reel.Status = "Published";
                             _logger.Information("Reel {ReelId} posted successfully", reel.Id);
                         }
                         else
@@ -99,7 +114,7 @@ public class Worker : BackgroundService
                             else
                             {
                                 reel.Status = "Pending";
-                                reel.ScheduledFor = DateTime.UtcNow.AddMinutes(5); // Retry in 5 minutes
+                                reel.ScheduledFor = DateTime.UtcNow.AddMinutes(5);
                                 _logger.Warning("Reel {ReelId} retry {Attempt}", reel.Id, reel.RetryCount);
                             }
                         }

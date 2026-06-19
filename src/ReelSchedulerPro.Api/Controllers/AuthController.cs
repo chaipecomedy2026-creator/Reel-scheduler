@@ -1,10 +1,9 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using ReelSchedulerPro.Application.Services;
-using ReelSchedulerPro.Infrastructure.Data;
-using ReelSchedulerPro.Domain.Entities;
-using ReelSchedulerPro.Shared.DTOs;
-using FluentValidation;
 using ReelSchedulerPro.Application.Validators;
+using ReelSchedulerPro.Shared.DTOs;
+using Serilog;
 
 namespace ReelSchedulerPro.Api.Controllers;
 
@@ -12,29 +11,53 @@ namespace ReelSchedulerPro.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IJwtTokenService _tokenService;
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IAuthenticationService _authService;
     private readonly IValidator<LoginRequest> _loginValidator;
-    private readonly ILogger<AuthController> _logger;
+    private readonly IValidator<RegisterRequest> _registerValidator;
+    private readonly ILogger _logger = Log.ForContext<AuthController>();
 
     public AuthController(
-        IJwtTokenService tokenService,
-        ApplicationDbContext dbContext,
+        IAuthenticationService authService,
         IValidator<LoginRequest> loginValidator,
-        ILogger<AuthController> logger)
+        IValidator<RegisterRequest> registerValidator)
     {
-        _tokenService = tokenService;
-        _dbContext = dbContext;
+        _authService = authService;
         _loginValidator = loginValidator;
-        _logger = logger;
+        _registerValidator = registerValidator;
     }
 
-    /// <summary>
-    /// Login with email and password
-    /// </summary>
-    /// <param name="request">Login credentials</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>JWT tokens</returns>
+    [HttpPost("register")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var validationResult = await _registerValidator.ValidateAsync(request, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            }
+
+            var response = await _authService.RegisterAsync(
+                request.Email,
+                request.Password,
+                request.FirstName,
+                request.LastName,
+                request.OrganizationName,
+                cancellationToken);
+
+            _logger.Information("User registered: {Email}", request.Email);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Registration error");
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
     [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -46,75 +69,22 @@ public class AuthController : ControllerBase
             var validationResult = await _loginValidator.ValidateAsync(request, cancellationToken);
             if (!validationResult.IsValid)
             {
-                _logger.LogWarning("Login validation failed for {Email}", request.Email);
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
             }
 
-            var user = _dbContext.Users.FirstOrDefault(u => u.Email == request.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            {
-                _logger.LogWarning("Login failed for {Email}: Invalid credentials", request.Email);
-                return Unauthorized(new { message = "Invalid email or password" });
-            }
-
-            if (!user.IsActive)
-            {
-                _logger.LogWarning("Login failed for {Email}: User is inactive", request.Email);
-                return Unauthorized(new { message = "User account is inactive" });
-            }
-
-            var token = _tokenService.GenerateToken(user.Id, user.Email, user.Role, user.OrganizationId);
-            _logger.LogInformation("User {Email} logged in successfully", user.Email);
-
+            var token = await _authService.LoginAsync(request.Email, request.Password, cancellationToken);
+            _logger.Information("User logged in: {Email}", request.Email);
             return Ok(token);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.Warning("Login failed: {Message}", ex.Message);
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Login error for {Email}", request.Email);
-            return StatusCode(500, new { message = "An error occurred during login" });
+            _logger.Error(ex, "Login error");
+            return StatusCode(500, new { message = ex.Message });
         }
     }
-
-    /// <summary>
-    /// Refresh authentication token
-    /// </summary>
-    /// <param name="request">Refresh token request</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>New JWT tokens</returns>
-    [HttpPost("refresh")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(request.RefreshToken))
-            {
-                _logger.LogWarning("Token refresh failed: No refresh token provided");
-                return BadRequest(new { message = "Refresh token is required" });
-            }
-
-            // TODO: Validate refresh token against database
-            // For now, generate new token
-            var token = new AuthTokenDTO
-            {
-                AccessToken = "new_access_token",
-                RefreshToken = request.RefreshToken,
-                ExpiresIn = 3600
-            };
-
-            return Ok(token);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Token refresh error");
-            return StatusCode(500, new { message = "An error occurred during token refresh" });
-        }
-    }
-}
-
-public class RefreshTokenRequest
-{
-    public string RefreshToken { get; set; } = string.Empty;
 }
