@@ -1,18 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>12</LangVersion>
+    <LangVersion>latest</LangVersion>
+    <UserSecretsId>dotnet-ReelSchedulerPro.Worker-1234</UserSecretsId>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\ReelSchedulerPro.Application\ReelSchedulerPro.Application.csproj" />
     <ProjectReference Include="..\ReelSchedulerPro.Infrastructure\ReelSchedulerPro.Infrastructure.csproj" />
+    <ProjectReference Include="..\ReelSchedulerPro.Shared\ReelSchedulerPro.Shared.csproj" />
   </ItemGroup>
+
   <ItemGroup>
+    <PackageReference Include="Hangfire.Core" Version="1.7.34" />
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.6" />
+    <PackageReference Include="Hangfire.PostgreSql" Version="1.20.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Serilog" Version="3.1.1" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
-    <PackageReference Include="Hangfire.Core" Version="1.8.8" />
-    <PackageReference Include="Hangfire.PostgreSql" Version="1.20.5" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="7.0.0" />
   </ItemGroup>
+
 </Project>
