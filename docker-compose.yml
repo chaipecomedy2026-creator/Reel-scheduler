@@ -2,56 +2,30 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:14-alpine
-    container_name: reelschedulerpro-db
+    image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ReelSchedulerPro
+      POSTGRES_DB: reelscheduler
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - reelscheduler-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  api:
-    build:
-      context: .
-      dockerfile: src/ReelSchedulerPro.Api/Dockerfile
-    container_name: reelschedulerpro-api
+  redis:
+    image: redis:7-alpine
     ports:
-      - "5000:8080"
-    environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Database=ReelSchedulerPro;Username=postgres;Password=postgres
-      - ASPNETCORE_ENVIRONMENT=Development
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - reelscheduler-network
-
-  worker:
-    build:
-      context: .
-      dockerfile: src/ReelSchedulerPro.Worker/Dockerfile
-    container_name: reelschedulerpro-worker
-    environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Database=ReelSchedulerPro;Username=postgres;Password=postgres
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - reelscheduler-network
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
-
-networks:
-  reelscheduler-network:
-    driver: bridge

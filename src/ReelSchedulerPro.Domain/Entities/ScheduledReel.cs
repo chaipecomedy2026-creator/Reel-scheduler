@@ -3,16 +3,32 @@ namespace ReelSchedulerPro.Domain.Entities;
 public class ScheduledReel
 {
     public Guid Id { get; set; }
-    public Guid OrganizationId { get; set; }
     public Guid InstagramAccountId { get; set; }
-    public string VideoUrl { get; set; } = string.Empty;
-    public string Caption { get; set; } = string.Empty;
+    public required string VideoUrl { get; set; }
+    public required string Caption { get; set; }
     public string? Hashtags { get; set; }
-    public DateTime ScheduledFor { get; set; }
-    public string Status { get; set; } = "Pending"; // Pending, Scheduled, Posted, Failed
-    public string? FailureReason { get; set; }
-    public int RetryCount { get; set; } = 0;
-    public string Timezone { get; set; } = "UTC";
+    public string? AltText { get; set; }
+    public DateTime ScheduledTime { get; set; }
+    public string TimeZone { get; set; } = "UTC";
+    public ReelStatus Status { get; set; } = ReelStatus.Scheduled;
+    public int RetryAttempts { get; set; } = 0;
+    public int MaxRetries { get; set; } = 3;
+    public string? PostId { get; set; }
+    public string? ErrorMessage { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? PublishedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    // Navigation
+    public InstagramAccount? InstagramAccount { get; set; }
+    public ICollection<PostingLog> PostingLogs { get; set; } = new List<PostingLog>();
+}
+
+public enum ReelStatus
+{
+    Scheduled,
+    Processing,
+    Posted,
+    Failed,
+    Cancelled
 }

@@ -3,51 +3,51 @@
 ## Prerequisites
 - .NET 8 SDK
 - PostgreSQL 14+
-- Visual Studio 2022 or VS Code
+- Docker & Docker Compose (optional)
 
-## Installation Steps
+## Local Setup
 
-### 1. Clone Repository
-```bash
-git clone https://github.com/gcopilot635-pixel/Reel-scheduler.git
-cd Reel-scheduler
-```
-
-### 2. Setup Database
-
-#### Using Docker
-```bash
-docker run --name reelschedulerpro-db -e POSTGRES_PASSWORD=postgres -d -p 5432:5432 postgres:14
-```
-
-#### Using Local PostgreSQL
-Update `appsettings.json` with your connection string:
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "Host=your-host;Database=ReelSchedulerPro;Username=your-user;Password=your-password"
-}
-```
-
-### 3. Apply Database Migrations
-
-#### From Visual Studio
-```powershell
-Update-Database
-```
-
-#### From Command Line
-```bash
-dotnet ef database update --project src/ReelSchedulerPro.Infrastructure --startup-project src/ReelSchedulerPro.Api
-```
-
-### 4. Run the Application
+### 1. Start Database
 
 ```bash
-# Terminal 1: API
+docker-compose up -d postgres redis
+```
+
+### 2. Install Dependencies
+
+```bash
+dotnet restore
+```
+
+### 3. Apply Migrations
+
+```bash
+cd src/ReelSchedulerPro.Api
+dotnet ef database update
+```
+
+### 4. Configure Secrets (Development)
+
+```bash
+cd src/ReelSchedulerPro.Api
+dotnet user-secrets set "Jwt:Secret" "your-secret-key-min-32-chars"
+dotnet user-secrets set "Jwt:Issuer" "ReelSchedulerPro"
+dotnet user-secrets set "Jwt:Audience" "ReelSchedulerProUsers"
+```
+
+### 5. Run API
+
+```bash
 cd src/ReelSchedulerPro.Api
 dotnet run
+```
 
-# Terminal 2: Worker
+API will be available at: `https://localhost:7001`
+Swagger UI: `https://localhost:7001/swagger`
+
+### 6. Run Worker (in another terminal)
+
+```bash
 cd src/ReelSchedulerPro.Worker
 dotnet run
 ```
@@ -58,96 +58,64 @@ dotnet run
 ReelSchedulerPro/
 ├── src/
 │   ├── ReelSchedulerPro.Api/           # ASP.NET Core Web API
-│   ├── ReelSchedulerPro.Application/   # Business Logic (CQRS)
-│   ├── ReelSchedulerPro.Domain/        # Domain Entities
-│   ├── ReelSchedulerPro.Infrastructure # Data Access, Services
-│   ├── ReelSchedulerPro.Worker/        # Background Jobs
-│   └── ReelSchedulerPro.Shared/        # DTOs, Constants
-├── ReelSchedulerPro.sln
-├── appsettings.json
-├── .gitignore
-└── README.md
+│   ├── ReelSchedulerPro.Application/   # Business logic & services
+│   ├── ReelSchedulerPro.Domain/        # Domain entities
+│   ├── ReelSchedulerPro.Infrastructure # Data access, migrations
+│   ├── ReelSchedulerPro.Shared/        # DTOs, validators, constants
+│   └── ReelSchedulerPro.Worker/        # Background jobs & services
+├── docker-compose.yml
+└── ReelSchedulerPro.sln
 ```
 
-## API Endpoints
+## Features Implemented
 
-### Authentication
-- `POST /api/auth/login` - Login
-- `POST /api/auth/refresh` - Refresh Token
-
-### Scheduler
-- `POST /api/scheduler/schedule-reel` - Schedule a reel
-- `GET /api/scheduler/reels` - Get scheduled reels
-
-## Configuration
-
-Update `appsettings.json` with your settings:
-
-```json
-{
-  "JwtSettings": {
-    "Secret": "your-strong-secret-key",
-    "Issuer": "ReelSchedulerPro",
-    "Audience": "ReelSchedulerPro",
-    "ExpirationMinutes": 60
-  },
-  "Instagram": {
-    "ApiUrl": "https://graph.instagram.com",
-    "ApiVersion": "v18.0"
-  }
-}
-```
-
-## Development
-
-### Building
-```bash
-dotnet build
-```
-
-### Running Tests (when added)
-```bash
-dotnet test
-```
-
-### Code Generation
-```bash
-# Create a new migration
-dotnet ef migrations add MigrationName --project src/ReelSchedulerPro.Infrastructure --startup-project src/ReelSchedulerPro.Api
-```
-
-## Security Considerations
-
-1. **Environment Variables**: Never commit sensitive data
-2. **Token Encryption**: Access tokens are encrypted in database
-3. **Input Validation**: FluentValidation is used for all inputs
-4. **Rate Limiting**: Implement rate limiting for production
-5. **CORS**: Configure CORS appropriately for production
-
-## Troubleshooting
-
-### Connection String Issues
-Verify PostgreSQL is running and accessible:
-```bash
-psql -U postgres -h localhost
-```
-
-### Migration Errors
-Clear and reapply migrations:
-```bash
-dotnet ef database drop --project src/ReelSchedulerPro.Infrastructure --startup-project src/ReelSchedulerPro.Api
-dotnet ef database update --project src/ReelSchedulerPro.Infrastructure --startup-project src/ReelSchedulerPro.Api
-```
+✅ Solution structure with clean architecture
+✅ Domain models for all core entities
+✅ EF Core configuration and migrations
+✅ PostgreSQL database setup
+✅ Authentication skeleton (JWT)
+✅ Shared DTOs and validators
+✅ Application service interfaces
+✅ Worker services (Posting, Health Check)
+✅ API controllers with error handling
+✅ Logging with Serilog
+✅ CORS configuration
 
 ## Next Steps
 
-1. Implement JWT authentication in AuthenticationService
-2. Create Instagram API integration
-3. Implement AI Caption generation
-4. Add comprehensive error handling
-5. Create unit tests
-6. Build React frontend
+1. **Authentication Implementation**: Implement JWT token generation and validation
+2. **Instagram Integration**: Add OAuth and API integration
+3. **Caption Generation**: Integrate OpenAI API
+4. **Scheduler Logic**: Implement background job processing
+5. **Frontend**: React/Next.js dashboard
+6. **Real-time Updates**: SignalR integration
+7. **Testing**: Unit and integration tests
 
-## Support
+## Environment Variables
 
-For issues, please create an GitHub issue in the repository.
+```
+ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=reelscheduler;Username=postgres;Password=postgres
+Jwt__Secret=your-secret-key-min-32-chars
+Jwt__Issuer=ReelSchedulerPro
+Jwt__Audience=ReelSchedulerProUsers
+OpenAI__ApiKey=your-openai-key
+Instagram__ClientId=your-instagram-app-id
+Instagram__ClientSecret=your-instagram-app-secret
+```
+
+## Troubleshooting
+
+### Database Connection Error
+- Ensure PostgreSQL is running: `docker ps`
+- Check connection string in appsettings.json
+
+### Migration Issues
+```bash
+dotnet ef database drop -f
+dotnet ef database update
+```
+
+## References
+- [Clean Architecture Guide](https://docs.microsoft.com/en-us/dotnet/architecture/modern-web-apps-azure/)
+- [EF Core Docs](https://learn.microsoft.com/en-us/ef/core/)
+- [ASP.NET Core Security](https://learn.microsoft.com/en-us/aspnet/core/security/)

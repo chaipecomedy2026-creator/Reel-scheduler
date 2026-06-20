@@ -1,21 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <LangVersion>12</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-ReelSchedulerPro.Api-1234</UserSecretsId>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\ReelSchedulerPro.Application\ReelSchedulerPro.Application.csproj" />
     <ProjectReference Include="..\ReelSchedulerPro.Infrastructure\ReelSchedulerPro.Infrastructure.csproj" />
+    <ProjectReference Include="..\ReelSchedulerPro.Shared\ReelSchedulerPro.Shared.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.4" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.11.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.4" />
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.4" />
-    <PackageReference Include="FluentValidation" Version="11.8.1" />
-    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.8" />
-    <PackageReference Include="Hangfire.PostgreSql" Version="1.20.5" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
   </ItemGroup>
+
 </Project>

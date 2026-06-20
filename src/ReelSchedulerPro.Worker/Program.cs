@@ -1,36 +1,26 @@
 using ReelSchedulerPro.Infrastructure.Data;
-using ReelSchedulerPro.Application.Services;
-using ReelSchedulerPro.Infrastructure.Services;
-using Microsoft.EntityFrameworkCore;
+using ReelSchedulerPro.Worker;
 using Serilog;
-using Hangfire;
-using Hangfire.PostgreSql;
 
-Host.CreateDefaultBuilder(args)
-    .UseSerilog((context, configuration) =>
-        configuration
-            .WriteTo.Console()
-            .WriteTo.File("logs/worker-.txt", rollingInterval: RollingInterval.Day)
-            .MinimumLevel.Information()
-            .Enrich.FromLogContext())
+var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
-        var connectionString = context.Configuration.GetConnectionString("DefaultConnection") 
-            ?? "Host=localhost;Database=ReelSchedulerPro;Username=postgres;Password=postgres";
-        
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString));
-
-        services.AddScoped<IEncryptionService, EncryptionService>();
-        services.AddScoped<IInstagramService, InstagramService>();
-        services.AddHttpClient<IInstagramService, InstagramService>();
-        services.AddScoped<IAiCaptionService, AiCaptionService>();
-
-        services.AddHangfire(config =>
-            config.UsePostgres(connectionString, new PostgreSqlStorageOptions { }));
+        // Add Hangfire
+        services.AddHangfire(cfg => cfg.UsePostgreSqlStorage(context.Configuration.GetConnectionString("DefaultConnection")));
         services.AddHangfireServer();
 
-        services.AddHostedService<ReelSchedulerPro.Worker.Worker>();
+        // Add DbContext
+        services.AddDbContext<ReelSchedulerProDbContext>(options =>
+            options.UseNpgsql(context.Configuration.GetConnectionString("DefaultConnection")));
+
+        // Add Hosted Services
+        services.AddHostedService<PostingWorker>();
+        services.AddHostedService<HealthCheckWorker>();
     })
-    .Build()
-    .RunAsync();
+    .UseSerilog((context, services, logger) => logger
+        .MinimumLevel.Information()
+        .WriteTo.Console()
+        .WriteTo.File("logs/worker-.txt", rollingInterval: RollingInterval.Day))
+    .Build();
+
+await host.RunAsync();

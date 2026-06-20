@@ -1,17 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>12</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\ReelSchedulerPro.Domain\ReelSchedulerPro.Domain.csproj" />
     <ProjectReference Include="..\ReelSchedulerPro.Shared\ReelSchedulerPro.Shared.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="MediatR" Version="12.1.1" />
     <PackageReference Include="FluentValidation" Version="11.8.1" />
-    <PackageReference Include="AutoMapper" Version="13.0.1" />
-    <PackageReference Include="Serilog" Version="3.1.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
   </ItemGroup>
+
 </Project>
